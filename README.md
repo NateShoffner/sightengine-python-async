@@ -1,6 +1,6 @@
 # Async Sight Engine Wrapper
 
-[![Python package](https://github.com/NateShoffner/sightengine-async/actions/workflows/python-package.yml/badge.svg)](https://github.com/NateShoffner/sightengine-async/actions/workflows/python-package.yml)
+[![Python package](https://github.com/NateShoffner/sightengine-python-async/actions/workflows/python-package.yml/badge.svg)](https://github.com/NateShoffner/sightengine-python-async/actions/workflows/python-package.yml)
 
 [![PyPI - Version](https://img.shields.io/pypi/v/sightengine-async)](https://pypi.org/project/sightengine-async/)
 
