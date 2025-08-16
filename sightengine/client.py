@@ -3,7 +3,7 @@ import os
 
 import aiohttp
 
-from .models import CheckRequest, CheckResponse
+from .models import CheckRequest, CheckResponse, VideoAsyncResponse
 
 BASE_URL = "https://api.sightengine.com/1.0/"
 
@@ -87,12 +87,20 @@ class SightEngineClient:
                     raise Exception(
                         f"Error: {response.status} - {await response.text()}"
                     )
-                return await response.json()
+                r_json = await response.json()
+                # for debugging, write response to a file
+                """
+                import json
+                with open("response.json", "w") as f:
+                    json.dump(r_json, f, indent=4)
+                """
+                return r_json
 
     async def check(self, request: CheckRequest) -> CheckResponse:
         endpoint = "check.json"
         base_params = self._get_default_check_params(request)
         files = None
+        response_model = CheckResponse
 
         if request.url:
             params = {**base_params, "url": request.url}
@@ -108,8 +116,16 @@ class SightEngineClient:
             method = "POST"
             data = base_params
             params = None
+        elif request.video_file:
+            endpoint = "video/check.json"
+            files = {"media": request.video_file}
+            method = "POST"
+            data = {**base_params, "callback_url": request.callback_url}
+            response_model = VideoAsyncResponse
         else:
-            raise ValueError("Either 'url' or 'file' must be provided in the request.")
+            raise ValueError(
+                "One of url, file, file_bytes, or video_file must be provided"
+            )
 
         r_json = await self._request(
             method=method,
@@ -118,4 +134,4 @@ class SightEngineClient:
             data=data if method == "POST" else None,
             files=files,
         )
-        return CheckResponse(**r_json)
+        return response_model(**r_json)

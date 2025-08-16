@@ -21,9 +21,9 @@ class CheckRequest(BaseModel):
     url: Optional[str] = None
     file: Optional[str] = None
     file_bytes: Optional[BytesIO] = None
-    is_video: Optional[bool] = False
+    video_file: Optional[str] = None
+    callback_url: Optional[str] = None
 
-    # set arbitrary types allowed for file_bytes
     class Config:
         arbitrary_types_allowed = True
 
@@ -367,3 +367,23 @@ class CheckResponse(BaseModel):
     money: Money
     gambling: Gambling
     media: Media
+
+
+# Video Async Response Models
+
+
+class Request(BaseModel):
+    id: str
+    timestamp: float
+
+
+class Media(BaseModel):
+    id: str
+    uri: str
+
+
+class VideoAsyncResponse(BaseModel):
+    status: str
+    request: Request
+    media: Media
+    callback: str
