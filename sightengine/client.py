@@ -3,6 +3,8 @@ import os
 
 import aiohttp
 
+from sightengine.video_models import VideoSyncResponse
+
 from .models import CheckRequest, CheckResponse, VideoAsyncResponse
 
 BASE_URL = "https://api.sightengine.com/1.0/"
@@ -117,11 +119,17 @@ class SightEngineClient:
             data = base_params
             params = None
         elif request.video_file:
-            endpoint = "video/check.json"
+            endpoint = "video/check-sync.json"
             files = {"media": request.video_file}
             method = "POST"
-            data = {**base_params, "callback_url": request.callback_url}
-            response_model = VideoAsyncResponse
+            data = base_params
+            response_model = VideoSyncResponse
+
+            # this is an async video check
+            if request.callback_url:
+                endpoint = "video/check.json"
+                data = {**data, "callback_url": request.callback_url}
+                response_model = VideoAsyncResponse
         else:
             raise ValueError(
                 "One of url, file, file_bytes, or video_file must be provided"
