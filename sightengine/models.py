@@ -23,6 +23,7 @@ class CheckRequest(BaseModel):
     file_bytes: Optional[BytesIO] = None
     video_file: Optional[str] = None
     callback_url: Optional[str] = None
+    params: Optional[dict] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -184,9 +185,10 @@ class Qr(BaseModel):
 
 
 class Type(BaseModel):
-    photo: float
-    illustration: float
+    photo: Optional[float] = None
+    illustration: Optional[float] = None
     ai_generated: float
+    ai_generators: Optional[dict[str, float]] # undocumented field
 
 
 class Quality(BaseModel):
@@ -342,31 +344,31 @@ class Media(BaseModel):
 
 
 class CheckResponse(BaseModel):
-    status: str
-    request: Request
-    nudity: Nudity
-    weapon: Weapon
-    recreational_drug: RecreationalDrug
-    medical: Medical
-    alcohol: Alcohol
-    sharpness: float
-    brightness: float
-    contrast: float
-    colors: Colors
-    qr: Qr
-    type: Type
-    quality: Quality
-    offensive: Offensive
-    faces: List[Face]
-    scam: Scam
-    text: Text
-    gore: Gore
-    tobacco: Tobacco
-    violence: Violence
-    self_harm: SelfHarm = Field(..., alias="self-harm")
-    money: Money
-    gambling: Gambling
-    media: Media
+    status: Optional[str] = None
+    request: Optional[Request] = None
+    nudity: Optional[Nudity] = None
+    weapon: Optional[Weapon] = None
+    recreational_drug: Optional[RecreationalDrug] = None
+    medical: Optional[Medical] = None
+    alcohol: Optional[Alcohol] = None
+    sharpness: Optional[float] = None
+    brightness: Optional[float] = None
+    contrast: Optional[float] = None
+    colors: Optional[Colors] = None
+    qr: Optional[Qr] = None
+    type: Optional[Type] = None
+    quality: Optional[Quality] = None
+    offensive: Optional[Offensive] = None
+    faces: Optional[List[Face]] = None
+    scam: Optional[Scam] = None
+    text: Optional[Text] = None
+    gore: Optional[Gore] = None
+    tobacco: Optional[Tobacco] = None
+    violence: Optional[Violence] = None
+    self_harm: Optional[SelfHarm] = Field(None, alias="self-harm")
+    money: Optional[Money] = None
+    gambling: Optional[Gambling] = None
+    media: Optional[Media] = None
 
 
 # Video Async Response Models
