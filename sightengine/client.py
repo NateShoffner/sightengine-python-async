@@ -101,6 +101,7 @@ class SightEngineClient:
     async def check(self, request: CheckRequest) -> CheckResponse:
         endpoint = "check.json"
         base_params = self._get_default_check_params(request)
+        base_params.update(request.params or {})
         files = None
         response_model = CheckResponse
 
