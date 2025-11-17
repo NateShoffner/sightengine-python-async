@@ -73,51 +73,59 @@ class SightEngineClient:
         if params:
             request_kwargs["params"] = params
 
-        if files:
-            form = aiohttp.FormData()
-            # add data fields to the form
-            for k, v in (data or {}).items():
-                form.add_field(k, str(v))
+        # Track file handles to close after request
+        file_handles = []
+        try:
+            if files:
+                form = aiohttp.FormData()
+                # add data fields to the form
+                for k, v in (data or {}).items():
+                    form.add_field(k, str(v))
 
-            # check if the file is a string, if so assume it's a file path
-            if isinstance(files["media"], str):
-                # add file fields to the form
-                for field, file_path in files.items():
-                    filename = os.path.basename(file_path)
-                    content_type, _ = mimetypes.guess_type(file_path)
-                    with open(file_path, "rb") as f:
-                        file_bytes = f.read()
-                    form.add_field(
-                        field,
-                        file_bytes,
-                        filename=filename,
-                        content_type=content_type,
-                    )
-            else:  # binary data
-                for field, file_bytes in files.items():
-                    content_type, _ = mimetypes.guess_type(field)
-                    form.add_field(
-                        field,
-                        file_bytes,
-                        content_type=content_type,
-                    )
-            request_kwargs["data"] = form
-        elif data:
-            request_kwargs["data"] = data
+                # check if the file is a string, if so assume it's a file path
+                if isinstance(files["media"], str):
+                    # add file fields to the form
+                    for field, file_path in files.items():
+                        filename = os.path.basename(file_path)
+                        content_type, _ = mimetypes.guess_type(file_path)
+                        # Open file and let aiohttp stream it
+                        file_obj = open(file_path, "rb")
+                        file_handles.append(file_obj)
+                        form.add_field(
+                            field,
+                            file_obj,
+                            filename=filename,
+                            content_type=content_type,
+                        )
+                else:  # binary data
+                    for field, file_bytes in files.items():
+                        content_type, _ = mimetypes.guess_type(field)
+                        form.add_field(
+                            field,
+                            file_bytes,
+                            content_type=content_type,
+                        )
+                request_kwargs["data"] = form
+            elif data:
+                request_kwargs["data"] = data
 
-        async with session.request(method, url, **request_kwargs) as response:
-            if response.status != 200:
-                raise Exception(
-                    f"Error: {response.status} - {await response.text()}"
-                )
-            r_json = await response.json()
-            # for debugging, write response to a file
-            """
-            import json
-            with open("response.json", "w") as f:
-                json.dump(r_json, f, indent=4)
-            """
-            return r_json
+            async with session.request(method, url, **request_kwargs) as response:
+                if response.status != 200:
+                    raise Exception(
+                        f"Error: {response.status} - {await response.text()}"
+                    )
+                r_json = await response.json()
+                # for debugging, write response to a file
+                """
+                import json
+                with open("response.json", "w") as f:
+                    json.dump(r_json, f, indent=4)
+                """
+                return r_json
+        finally:
+            # Close all file handles
+            for fh in file_handles:
+                fh.close()
 
     async def check(self, request: CheckRequest) -> CheckResponse:
         endpoint = "check.json"
