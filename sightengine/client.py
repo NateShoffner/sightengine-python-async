@@ -14,6 +14,7 @@ class SightEngineClient:
     def __init__(self, api_user: int, api_secret: str):
         self.api_user = api_user
         self.api_secret = api_secret
+        self._session: aiohttp.ClientSession | None = None
 
     def _get_default_check_params(self, check_request: CheckRequest) -> dict:
         """Prepare parameters for the check request"""
@@ -33,6 +34,26 @@ class SightEngineClient:
             headers["Content-Type"] = "application/json"
         return headers
 
+    async def _get_session(self) -> aiohttp.ClientSession:
+        """Get or create the aiohttp session"""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
+
+    async def close(self):
+        """Close the aiohttp session"""
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
+            self._session = None
+
+    async def __aenter__(self):
+        """Async context manager entry"""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        await self.close()
+
     async def _request(
         self,
         method: str,
@@ -47,56 +68,56 @@ class SightEngineClient:
         headers = headers or self._get_default_headers(is_multipart=is_multipart)
         url = f"{BASE_URL}{endpoint}"
 
-        async with aiohttp.ClientSession() as session:
-            request_kwargs = {"headers": headers}
-            if params:
-                request_kwargs["params"] = params
+        session = await self._get_session()
+        request_kwargs = {"headers": headers}
+        if params:
+            request_kwargs["params"] = params
 
-            if files:
-                form = aiohttp.FormData()
-                # add data fields to the form
-                for k, v in (data or {}).items():
-                    form.add_field(k, str(v))
+        if files:
+            form = aiohttp.FormData()
+            # add data fields to the form
+            for k, v in (data or {}).items():
+                form.add_field(k, str(v))
 
-                # check if the file is a string, if so assume it's a file path
-                if isinstance(files["media"], str):
-                    # add file fields to the form
-                    for field, file_path in files.items():
-                        filename = os.path.basename(file_path)
-                        content_type, _ = mimetypes.guess_type(file_path)
-                        with open(file_path, "rb") as f:
-                            file_bytes = f.read()
-                        form.add_field(
-                            field,
-                            file_bytes,
-                            filename=filename,
-                            content_type=content_type,
-                        )
-                else:  # binary data
-                    for field, file_bytes in files.items():
-                        content_type, _ = mimetypes.guess_type(field)
-                        form.add_field(
-                            field,
-                            file_bytes,
-                            content_type=content_type,
-                        )
-                request_kwargs["data"] = form
-            elif data:
-                request_kwargs["data"] = data
-
-            async with session.request(method, url, **request_kwargs) as response:
-                if response.status != 200:
-                    raise Exception(
-                        f"Error: {response.status} - {await response.text()}"
+            # check if the file is a string, if so assume it's a file path
+            if isinstance(files["media"], str):
+                # add file fields to the form
+                for field, file_path in files.items():
+                    filename = os.path.basename(file_path)
+                    content_type, _ = mimetypes.guess_type(file_path)
+                    with open(file_path, "rb") as f:
+                        file_bytes = f.read()
+                    form.add_field(
+                        field,
+                        file_bytes,
+                        filename=filename,
+                        content_type=content_type,
                     )
-                r_json = await response.json()
-                # for debugging, write response to a file
-                """
-                import json
-                with open("response.json", "w") as f:
-                    json.dump(r_json, f, indent=4)
-                """
-                return r_json
+            else:  # binary data
+                for field, file_bytes in files.items():
+                    content_type, _ = mimetypes.guess_type(field)
+                    form.add_field(
+                        field,
+                        file_bytes,
+                        content_type=content_type,
+                    )
+            request_kwargs["data"] = form
+        elif data:
+            request_kwargs["data"] = data
+
+        async with session.request(method, url, **request_kwargs) as response:
+            if response.status != 200:
+                raise Exception(
+                    f"Error: {response.status} - {await response.text()}"
+                )
+            r_json = await response.json()
+            # for debugging, write response to a file
+            """
+            import json
+            with open("response.json", "w") as f:
+                json.dump(r_json, f, indent=4)
+            """
+            return r_json
 
     async def check(self, request: CheckRequest) -> CheckResponse:
         endpoint = "check.json"

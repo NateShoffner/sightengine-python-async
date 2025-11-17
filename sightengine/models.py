@@ -1,17 +1,7 @@
-from datetime import datetime
 from io import BytesIO
-from typing import Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
-
-
-def parse_datetime(value):
-    if isinstance(value, str):
-        try:
-            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            return datetime.fromisoformat(value)
-    return datetime.fromtimestamp(value / 1000)
+from pydantic import BaseModel, Field
 
 
 class CheckRequest(BaseModel):
@@ -27,11 +17,6 @@ class CheckRequest(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-
-
-from typing import List
-
-from pydantic import BaseModel, Field
 
 
 class Request(BaseModel):
@@ -188,7 +173,7 @@ class Type(BaseModel):
     photo: Optional[float] = None
     illustration: Optional[float] = None
     ai_generated: float
-    ai_generators: Optional[dict[str, float]] # undocumented field
+    ai_generators: Optional[dict[str, float]]  # undocumented field
 
 
 class Quality(BaseModel):
@@ -374,18 +359,18 @@ class CheckResponse(BaseModel):
 # Video Async Response Models
 
 
-class Request(BaseModel):
+class VideoAsyncRequest(BaseModel):
     id: str
     timestamp: float
 
 
-class Media(BaseModel):
+class VideoAsyncMedia(BaseModel):
     id: str
     uri: str
 
 
 class VideoAsyncResponse(BaseModel):
     status: str
-    request: Request
-    media: Media
+    request: VideoAsyncRequest
+    media: VideoAsyncMedia
     callback: str
