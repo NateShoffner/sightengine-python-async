@@ -21,24 +21,23 @@ load_dotenv()
 
 
 async def main():
-    client = SightEngineClient(
+    async with SightEngineClient(
         api_user=os.getenv("SIGHTENGINE_API_USER"),
         api_secret=os.getenv("SIGHTENGINE_API_SECRET"),
-    )
+    ) as client:
+        request = CheckRequest(
+            models=[
+                "nudity-2.1",
+                "weapon",
+                "alcohol",
+                "medical",
+                "gambling",
+            ],
+            url="https://sightengine.com/assets/img/examples/example5.jpg",
+        )
 
-    request = CheckRequest(
-        models=[
-            "nudity-2.1",
-            "weapon",
-            "alcohol",
-            "medical",
-            "gambling",
-        ],
-        url="https://sightengine.com/assets/img/examples/example5.jpg",
-    )
-
-    response = await client.check(request)
-    print(response)
+        response = await client.check(request)
+        print(response)
 
 if __name__ == "__main__":
     asyncio.run(main())
